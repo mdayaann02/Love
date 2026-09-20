@@ -177,9 +177,10 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun triggerFriendReplySequence(userText: String, sticker: String?) {
         viewModelScope.launch {
-            delay(1200)
+            delay(700)
             _isFriendTyping.value = true
-            delay(1800)
+            hapticManager.vibrateTick()
+            delay(2200)
             _isFriendTyping.value = false
 
             val replies = listOf(
@@ -235,7 +236,8 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     fun triggerInstantFriendMessage() {
         viewModelScope.launch {
             _isFriendTyping.value = true
-            delay(800)
+            hapticManager.vibrateTick()
+            delay(1500)
             _isFriendTyping.value = false
 
             val friendMsg = MessageEntity(

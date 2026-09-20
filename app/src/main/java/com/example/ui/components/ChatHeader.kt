@@ -189,17 +189,14 @@ fun ChatHeader(
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    text = "typing...",
+                                    text = "typing",
                                     color = palette.snapPrimaryYellow,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.SemiBold
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Icon(
-                                    imageVector = Icons.Default.FiberManualRecord,
-                                    contentDescription = null,
-                                    tint = palette.snapPrimaryYellow,
-                                    modifier = Modifier.size(6.dp)
+                                BouncingTypingDots(
+                                    dotColor = palette.snapPrimaryYellow
                                 )
                             }
                         }

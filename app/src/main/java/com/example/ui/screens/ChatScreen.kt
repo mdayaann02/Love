@@ -43,6 +43,7 @@ import com.example.ui.components.EmojiDrawer
 import com.example.ui.components.FriendProfileSheet
 import com.example.ui.components.LiquidGlassCard
 import com.example.ui.components.MessageItem
+import com.example.ui.components.RealtimeTypingIndicator
 import com.example.ui.theme.GlassTheme
 import com.example.ui.theme.LocalLiquidGlassPalette
 import com.example.ui.theme.TimeOfDay
@@ -82,10 +83,11 @@ fun ChatScreen(
 
     val listState = rememberLazyListState()
 
-    // Auto-scroll to bottom on new message
-    LaunchedEffect(messages.size) {
-        if (messages.isNotEmpty()) {
-            listState.animateScrollToItem(messages.size - 1)
+    // Auto-scroll to bottom on new message or when friend starts typing
+    LaunchedEffect(messages.size, isFriendTyping) {
+        val totalCount = messages.size + if (isFriendTyping) 1 else 0
+        if (totalCount > 0) {
+            listState.animateScrollToItem(totalCount - 1)
         }
     }
 
@@ -140,7 +142,7 @@ fun ChatScreen(
                         .weight(1f)
                         .fillMaxWidth()
                 ) {
-                    if (messages.isEmpty()) {
+                    if (messages.isEmpty() && !isFriendTyping) {
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -197,6 +199,17 @@ fun ChatScreen(
                                     onBurnImmediately = { viewModel.burnMessageImmediately(it) },
                                     onMarkRead = { viewModel.markMessageRead(it) }
                                 )
+                            }
+
+                            // Real-time animated 'is typing' indicator in the chat stream
+                            if (isFriendTyping) {
+                                item(key = "realtime_typing_indicator") {
+                                    RealtimeTypingIndicator(
+                                        isVisible = true,
+                                        friendName = friendProfile?.name ?: "Alex",
+                                        avatarEmoji = friendProfile?.avatarEmoji ?: "👻"
+                                    )
+                                }
                             }
                         }
                     }

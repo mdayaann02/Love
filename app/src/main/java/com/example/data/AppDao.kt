@@ -36,6 +36,15 @@ interface AppDao {
     @Query("DELETE FROM messages")
     suspend fun clearAllMessages()
 
+    @Query("SELECT COUNT(*) FROM messages WHERE clientMessageId = :clientMsgId AND clientMessageId != ''")
+    suspend fun hasMessageWithClientId(clientMsgId: String): Int
+
+    @Query("UPDATE messages SET isSaved = :isSaved WHERE clientMessageId = :clientMsgId")
+    suspend fun setMessageSavedByClientId(clientMsgId: String, isSaved: Boolean)
+
+    @Query("UPDATE messages SET isBurned = 1 WHERE clientMessageId = :clientMsgId")
+    suspend fun burnMessageByClientId(clientMsgId: String)
+
     @Query("SELECT * FROM friend_profile WHERE id = 1")
     fun getFriendProfile(): Flow<FriendProfile?>
 

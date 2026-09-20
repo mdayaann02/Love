@@ -38,6 +38,18 @@ class ChatRepository(private val appDao: AppDao) {
         appDao.clearAllMessages()
     }
 
+    suspend fun hasMessageWithClientId(clientMsgId: String): Boolean {
+        return appDao.hasMessageWithClientId(clientMsgId) > 0
+    }
+
+    suspend fun setMessageSavedByClientId(clientMsgId: String, isSaved: Boolean) {
+        appDao.setMessageSavedByClientId(clientMsgId, isSaved)
+    }
+
+    suspend fun burnMessageByClientId(clientMsgId: String) {
+        appDao.burnMessageByClientId(clientMsgId)
+    }
+
     suspend fun saveFriendProfile(profile: FriendProfile) {
         appDao.saveFriendProfile(profile)
     }

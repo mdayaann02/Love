@@ -9,6 +9,7 @@ import com.example.data.FriendProfile
 import com.example.data.GoogleUserData
 import com.example.data.MessageEntity
 import com.example.ui.theme.TimeOfDay
+import com.example.util.CoupleRealtimeSyncManager
 import com.example.util.GoogleAuthManager
 import com.example.util.GoogleMessagesManager
 import com.example.util.HapticFeedbackManager
@@ -20,6 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 class ChatViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: ChatRepository
@@ -28,29 +30,110 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     val googleUser: StateFlow<GoogleUserData> = googleAuthManager.currentUser
 
+    private val _isFriendTyping = MutableStateFlow(false)
+    val isFriendTyping: StateFlow<Boolean> = _isFriendTyping.asStateFlow()
+
+    private val _currentEphemeralMode = MutableStateFlow("KEEP") // "KEEP" or "DELETE_AFTER_READ"
+    val currentEphemeralMode: StateFlow<String> = _currentEphemeralMode.asStateFlow()
+
+    private val _manualTimeOfDay = MutableStateFlow<TimeOfDay?>(null)
+    val manualTimeOfDay: StateFlow<TimeOfDay?> = _manualTimeOfDay.asStateFlow()
+
+    private val _lovePingEvent = MutableStateFlow<String?>(null)
+    val lovePingEvent: StateFlow<String?> = _lovePingEvent.asStateFlow()
+
+    private val activeBurnJobs = mutableMapOf<Long, Job>()
+    private var typingTimeoutJob: Job? = null
+
+    // Real-Time 2-Way Sync Engine connecting to Girlfriend's phone
+    val coupleSyncManager = CoupleRealtimeSyncManager(
+        onMessageReceived = { clientMsgId, senderRole, senderName, text, mediaType, emojiSticker, ephemeralMode, timestamp ->
+            handleIncomingRealtimeMessage(clientMsgId, senderRole, senderName, text, mediaType, emojiSticker, ephemeralMode, timestamp)
+        },
+        onTypingStateChanged = { isTyping, senderName ->
+            _isFriendTyping.value = isTyping
+            if (isTyping) {
+                hapticManager.vibrateTick()
+                typingTimeoutJob?.cancel()
+                typingTimeoutJob = viewModelScope.launch {
+                    delay(5000)
+                    _isFriendTyping.value = false
+                }
+            }
+        },
+        onLovePingReceived = { senderName, pingType ->
+            viewModelScope.launch {
+                val pingEmoji = when (pingType) {
+                    "HEART" -> "❤️"
+                    "KISS" -> "💋"
+                    "HUG" -> "🫂"
+                    else -> "💖"
+                }
+                _lovePingEvent.value = "$senderName sent you a $pingEmoji Love Ping!"
+                hapticManager.vibrateMessageReceived()
+                delay(3500)
+                _lovePingEvent.value = null
+            }
+        },
+        onMessageBurned = { clientMsgId ->
+            viewModelScope.launch {
+                repository.burnMessageByClientId(clientMsgId)
+                hapticManager.vibrateEphemeralBurn()
+            }
+        },
+        onMessageSaveToggled = { clientMsgId, isSaved ->
+            viewModelScope.launch {
+                repository.setMessageSavedByClientId(clientMsgId, isSaved)
+                hapticManager.vibrateTick()
+            }
+        }
+    )
+
+    val isRealtimeConnected: StateFlow<Boolean> = coupleSyncManager.isConnected
+
     init {
         val db = AppDatabase.getDatabase(application)
         repository = ChatRepository(db.appDao())
 
-        // Ensure initial profile and starter messages exist
+        // Ensure girlfriend profile and romantic couple starter messages exist
         viewModelScope.launch {
             repository.friendProfile.collect { profile ->
                 if (profile == null) {
                     val initialProfile = FriendProfile(
                         id = 1,
-                        name = "Alex",
-                        handle = "alex.snap",
-                        avatarEmoji = "👻",
-                        streakCount = 142,
-                        streakEmoji = "🔥",
-                        statusMessage = "Live fast, snap faster 💛",
+                        name = "My Babe 💖",
+                        handle = "my.girlfriend",
+                        avatarEmoji = "👸",
+                        streakCount = 365,
+                        streakEmoji = "❤️",
+                        statusMessage = "Forever & always with you 💕",
                         ephemeralDefault = "KEEP",
                         timeOfDayTheme = "AUTO",
                         hapticFeedbackEnabled = true,
                         soundEnabled = true,
-                        encryptionKeyFingerprint = "48A2-9E71-F03B-CC89"
+                        encryptionKeyFingerprint = "48A2-9E71-F03B-CC89",
+                        phoneNumber = "+15551234567",
+                        coupleSyncCode = "DAYAN-LOVE-2026",
+                        myName = "Dayan",
+                        myRole = "BOYFRIEND"
                     )
                     repository.saveFriendProfile(initialProfile)
+                } else if (profile.name == "Alex" || profile.coupleSyncCode.isBlank()) {
+                    val updated = profile.copy(
+                        name = "My Babe 💖",
+                        handle = "my.girlfriend",
+                        avatarEmoji = "👸",
+                        streakCount = if (profile.streakCount == 142) 365 else profile.streakCount,
+                        streakEmoji = "❤️",
+                        coupleSyncCode = "DAYAN-LOVE-2026",
+                        myName = "Dayan",
+                        myRole = "BOYFRIEND"
+                    )
+                    repository.saveFriendProfile(updated)
+                    coupleSyncManager.startListening(updated.coupleSyncCode, updated.myRole)
+                } else {
+                    // Start or refresh real-time sync channel listener
+                    coupleSyncManager.startListening(profile.coupleSyncCode, profile.myRole)
                 }
             }
         }
@@ -78,57 +161,98 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             initialValue = null
         )
 
-    private val _isFriendTyping = MutableStateFlow(false)
-    val isFriendTyping: StateFlow<Boolean> = _isFriendTyping.asStateFlow()
-
-    private val _currentEphemeralMode = MutableStateFlow("KEEP") // "KEEP" or "DELETE_AFTER_READ"
-    val currentEphemeralMode: StateFlow<String> = _currentEphemeralMode.asStateFlow()
-
-    private val _manualTimeOfDay = MutableStateFlow<TimeOfDay?>(null)
-    val manualTimeOfDay: StateFlow<TimeOfDay?> = _manualTimeOfDay.asStateFlow()
-
-    private val activeBurnJobs = mutableMapOf<Long, Job>()
-
     private suspend fun populateStarterMessages() {
         val now = System.currentTimeMillis()
         val m1 = MessageEntity(
-            text = "Yo! 142 day streak today 🔥 don't forget to send a snap!",
+            text = "Hey Dayan! Happy 365 day anniversary streak ❤️ So happy to text with you here!",
             sender = "friend",
             timestamp = now - 3600000,
             isSaved = true,
             isRead = true,
-            ephemeralMode = "KEEP"
+            ephemeralMode = "KEEP",
+            clientMessageId = "init-gf-1"
         )
         val m2 = MessageEntity(
-            text = "Haha got you covered! Working on the new liquid glass look ✨",
+            text = "Hey babe! Loving our private real-time couple chat ✨",
             sender = "me",
             timestamp = now - 1800000,
             isSaved = true,
             isRead = true,
-            ephemeralMode = "KEEP"
+            ephemeralMode = "KEEP",
+            clientMessageId = "init-me-1"
         )
         val m3 = MessageEntity(
-            text = "Check out this funny derp face 🤪",
+            text = "Sending you my love 🥰",
             sender = "friend",
             timestamp = now - 600000,
             isSaved = false,
             isRead = true,
-            emojiSticker = "🤪",
+            emojiSticker = "🥰",
             mediaType = "STICKER",
-            ephemeralMode = "KEEP"
+            ephemeralMode = "KEEP",
+            clientMessageId = "init-gf-2"
         )
         val m4 = MessageEntity(
-            text = "🔒 Encrypted single-person chat active. Toggle 'Delete After Read' for instant disappearing snaps!",
+            text = "🔒 Live 2-way real-time couple sync active. Anything either of us texts appears instantly!",
             sender = "friend",
             timestamp = now - 120000,
             isSaved = false,
             isRead = true,
-            ephemeralMode = "KEEP"
+            ephemeralMode = "KEEP",
+            clientMessageId = "init-gf-3"
         )
         repository.insertMessage(m1)
         repository.insertMessage(m2)
         repository.insertMessage(m3)
         repository.insertMessage(m4)
+    }
+
+    private fun handleIncomingRealtimeMessage(
+        clientMsgId: String,
+        senderRole: String,
+        senderName: String,
+        text: String,
+        mediaType: String,
+        emojiSticker: String?,
+        ephemeralMode: String,
+        timestamp: Long
+    ) {
+        viewModelScope.launch {
+            if (repository.hasMessageWithClientId(clientMsgId)) {
+                return@launch
+            }
+
+            _isFriendTyping.value = false
+
+            val currentMyRole = friendProfile.value?.myRole ?: "BOYFRIEND"
+            // If message was sent by the other role, it's incoming ("friend")
+            val messageSender = if (senderRole == currentMyRole) "me" else "friend"
+
+            val incomingMessage = MessageEntity(
+                text = text,
+                sender = messageSender,
+                timestamp = timestamp,
+                isSaved = false,
+                isRead = false,
+                ephemeralMode = ephemeralMode,
+                emojiSticker = emojiSticker,
+                mediaType = mediaType,
+                clientMessageId = clientMsgId
+            )
+
+            val newId = repository.insertMessage(incomingMessage)
+            if (messageSender == "friend") {
+                hapticManager.vibrateMessageReceived()
+            }
+
+            if (ephemeralMode == "DELETE_AFTER_READ" && messageSender == "friend") {
+                startEphemeralCountdown(newId)
+            }
+        }
+    }
+
+    fun dismissLovePing() {
+        _lovePingEvent.value = null
     }
 
     fun setEphemeralMode(mode: String) {
@@ -157,10 +281,22 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun onUserTyping(isTyping: Boolean) {
+        val currentProfile = friendProfile.value
+        val myName = currentProfile?.myName ?: (googleUser.value.displayName.ifBlank { "Dayan" })
+        val myRole = currentProfile?.myRole ?: "BOYFRIEND"
+        coupleSyncManager.broadcastTyping(isTyping, myName, myRole)
+    }
+
     fun sendMessage(text: String, mediaType: String = "TEXT", emojiSticker: String? = null) {
         if (text.isBlank() && emojiSticker == null) return
 
         val mode = _currentEphemeralMode.value
+        val clientMsgId = UUID.randomUUID().toString()
+        val currentProfile = friendProfile.value
+        val myName = currentProfile?.myName ?: (googleUser.value.displayName.ifBlank { "Dayan" })
+        val myRole = currentProfile?.myRole ?: "BOYFRIEND"
+
         val message = MessageEntity(
             text = text,
             sender = "me",
@@ -169,91 +305,60 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             isRead = true,
             ephemeralMode = mode,
             emojiSticker = emojiSticker,
-            mediaType = mediaType
+            mediaType = mediaType,
+            clientMessageId = clientMsgId
         )
 
         viewModelScope.launch {
             repository.insertMessage(message)
             hapticManager.vibrateMessageSent()
 
-            // Trigger simulated friend reply after a realistic typing interval
-            triggerFriendReplySequence(text, emojiSticker)
+            // Broadcast instantly to girlfriend's device via real-time couple channel
+            coupleSyncManager.broadcastChatMessage(
+                clientMsgId = clientMsgId,
+                senderRole = myRole,
+                senderName = myName,
+                text = text,
+                mediaType = mediaType,
+                emojiSticker = emojiSticker,
+                ephemeralMode = mode
+            )
         }
     }
 
-    private fun triggerFriendReplySequence(userText: String, sticker: String?) {
-        viewModelScope.launch {
-            delay(700)
-            _isFriendTyping.value = true
-            hapticManager.vibrateTick()
-            delay(2200)
-            _isFriendTyping.value = false
-
-            val replies = listOf(
-                "Bruh no way 💀",
-                "OMG that's hilarious 😭",
-                "🔥 Streak saved for today!",
-                "Look at this one 🗿",
-                "Wait till you see my snap 👀",
-                "Pure liquid glass aesthetic ✨",
-                "Did that just disappear? 🤫",
-                "100% encrypted vibes only 🔒",
-                "Send another meme 🌮",
-                "Hahaha you're too funny 🤪"
-            )
-            val funnyStickers = listOf("🤪", "🔥", "💀", "🗿", "💅", "🐒", "🌮", "🚀")
-
-            val replyText: String
-            val replySticker: String?
-            val replyType: String
-
-            if (sticker != null) {
-                replyText = ""
-                replySticker = funnyStickers.random()
-                replyType = "STICKER"
-            } else {
-                replyText = replies.random()
-                replySticker = null
-                replyType = "TEXT"
-            }
-
-            val friendMsg = MessageEntity(
-                text = replyText,
-                sender = "friend",
-                timestamp = System.currentTimeMillis(),
-                isSaved = false,
-                isRead = false,
-                ephemeralMode = _currentEphemeralMode.value,
-                emojiSticker = replySticker,
-                mediaType = replyType
-            )
-
-            val newId = repository.insertMessage(friendMsg)
-            // MANDATORY: Haptic feedback for every message received!
-            hapticManager.vibrateMessageReceived()
-
-            // If ephemeral delete after read is active, handle auto-read countdown
-            if (_currentEphemeralMode.value == "DELETE_AFTER_READ") {
-                startEphemeralCountdown(newId)
-            }
-        }
+    fun sendLovePing(pingType: String = "HEART") {
+        val currentProfile = friendProfile.value
+        val myName = currentProfile?.myName ?: (googleUser.value.displayName.ifBlank { "Dayan" })
+        val myRole = currentProfile?.myRole ?: "BOYFRIEND"
+        coupleSyncManager.broadcastLovePing(myName, myRole, pingType)
+        hapticManager.vibrateMessageSent()
     }
 
     fun triggerInstantFriendMessage() {
+        // Quick simulator to test girlfriend's incoming snap when testing solo
         viewModelScope.launch {
             _isFriendTyping.value = true
             hapticManager.vibrateTick()
             delay(1500)
             _isFriendTyping.value = false
 
+            val sweetMessages = listOf(
+                "Thinking of you my love! ❤️",
+                "Can't wait to see you today babe 🥰",
+                "You're the sweetest! 💖",
+                "Love our cute Snapchat look ✨",
+                "Always right here with you 💕"
+            )
+
             val friendMsg = MessageEntity(
-                text = "⚡ Instant snap test! Feeling the haptic pulse? 💛",
+                text = sweetMessages.random(),
                 sender = "friend",
                 timestamp = System.currentTimeMillis(),
                 isSaved = false,
                 isRead = false,
                 ephemeralMode = _currentEphemeralMode.value,
-                mediaType = "TEXT"
+                mediaType = "TEXT",
+                clientMessageId = UUID.randomUUID().toString()
             )
             val newId = repository.insertMessage(friendMsg)
             hapticManager.vibrateMessageReceived()
@@ -270,12 +375,14 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             repository.setMessageSaved(message.id, newSavedState)
             hapticManager.vibrateTick()
 
-            // If it was scheduled for ephemeral burn and now saved, cancel the burn
+            if (message.clientMessageId.isNotBlank()) {
+                coupleSyncManager.broadcastSaveToggle(message.clientMessageId, newSavedState)
+            }
+
             if (newSavedState) {
                 activeBurnJobs[message.id]?.cancel()
                 activeBurnJobs.remove(message.id)
             } else if (message.ephemeralMode == "DELETE_AFTER_READ") {
-                // If un-saved and in delete after read mode, trigger burn countdown
                 startEphemeralCountdown(message.id)
             }
         }
@@ -295,12 +402,14 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         activeBurnJobs[messageId]?.cancel()
         activeBurnJobs[messageId] = viewModelScope.launch {
             delay(delayMillis)
-            // Double check if message is saved before deleting
             val currentList = messages.value
             val msg = currentList.find { it.id == messageId }
             if (msg != null && !msg.isSaved) {
                 hapticManager.vibrateEphemeralBurn()
                 repository.deleteMessage(messageId)
+                if (msg.clientMessageId.isNotBlank()) {
+                    coupleSyncManager.broadcastBurnMessage(msg.clientMessageId)
+                }
             }
             activeBurnJobs.remove(messageId)
         }
@@ -308,8 +417,12 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     fun burnMessageImmediately(messageId: Long) {
         viewModelScope.launch {
+            val msg = messages.value.find { it.id == messageId }
             hapticManager.vibrateEphemeralBurn()
             repository.deleteMessage(messageId)
+            if (msg?.clientMessageId?.isNotBlank() == true) {
+                coupleSyncManager.broadcastBurnMessage(msg.clientMessageId)
+            }
         }
     }
 
@@ -320,18 +433,42 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun updateFriendProfile(name: String, handle: String, avatar: String, streak: Int, phoneNumber: String = "+15551234567") {
+    fun updateFriendProfile(
+        name: String,
+        handle: String,
+        avatar: String,
+        streak: Int,
+        phoneNumber: String = "+15551234567",
+        coupleSyncCode: String? = null
+    ) {
         viewModelScope.launch {
             val current = friendProfile.value ?: FriendProfile()
-            repository.saveFriendProfile(
-                current.copy(
-                    name = name,
-                    handle = handle,
-                    avatarEmoji = avatar,
-                    streakCount = streak,
-                    phoneNumber = phoneNumber
-                )
+            val newCode = coupleSyncCode ?: current.coupleSyncCode
+            val updated = current.copy(
+                name = name,
+                handle = handle,
+                avatarEmoji = avatar,
+                streakCount = streak,
+                phoneNumber = phoneNumber,
+                coupleSyncCode = newCode
             )
+            repository.saveFriendProfile(updated)
+            coupleSyncManager.startListening(newCode, updated.myRole)
+            hapticManager.vibrateTick()
+        }
+    }
+
+    fun switchUserRole(newRole: String) {
+        viewModelScope.launch {
+            val current = friendProfile.value ?: FriendProfile()
+            val isNowBoyfriend = newRole == "BOYFRIEND"
+            val newMyName = if (isNowBoyfriend) "Dayan" else current.name.substringBefore(" ")
+            val updated = current.copy(
+                myRole = newRole,
+                myName = newMyName
+            )
+            repository.saveFriendProfile(updated)
+            coupleSyncManager.startListening(updated.coupleSyncCode, updated.myRole)
             hapticManager.vibrateTick()
         }
     }
@@ -344,6 +481,10 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     fun signInWithDemoGoogle(email: String = "snap.user@gmail.com", displayName: String = "Snap Member") {
         googleAuthManager.signInWithDemoGoogleAccount(email, displayName)
+        viewModelScope.launch {
+            val current = friendProfile.value ?: FriendProfile()
+            repository.saveFriendProfile(current.copy(myName = displayName))
+        }
         hapticManager.vibrateMessageReceived()
     }
 
@@ -352,5 +493,10 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             googleAuthManager.signOut()
             hapticManager.vibrateTick()
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        coupleSyncManager.stopListening()
     }
 }

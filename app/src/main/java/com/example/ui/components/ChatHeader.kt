@@ -57,10 +57,12 @@ fun ChatHeader(
     isFriendTyping: Boolean,
     currentTimeOfDay: TimeOfDay,
     ephemeralMode: String,
+    isRealtimeConnected: Boolean = true,
     onProfileClick: () -> Unit,
     onEphemeralToggleClick: () -> Unit,
     onTimeOfDayToggleClick: () -> Unit,
     onGoogleMessagesClick: () -> Unit = {},
+    onLovePingClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val palette = GlassTheme.palette
@@ -205,17 +207,18 @@ fun ChatHeader(
 
                         if (!isFriendTyping) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.Lock,
-                                    contentDescription = "Encrypted",
-                                    tint = palette.textTertiary,
-                                    modifier = Modifier.size(10.dp)
+                                Box(
+                                    modifier = Modifier
+                                        .size(7.dp)
+                                        .clip(CircleShape)
+                                        .background(if (isRealtimeConnected) Color(0xFF00E676) else Color(0xFFFFB74D))
                                 )
-                                Spacer(modifier = Modifier.width(3.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = "E2E Encrypted • Solo",
-                                    color = palette.textSecondary,
-                                    fontSize = 11.sp
+                                    text = if (isRealtimeConnected) "Live 2-Way Realtime" else "Connecting...",
+                                    color = if (isRealtimeConnected) Color(0xFF69F0AE) else palette.textSecondary,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isRealtimeConnected) FontWeight.Medium else FontWeight.Normal
                                 )
                             }
                         }
@@ -270,6 +273,25 @@ fun ChatHeader(
                             )
                         }
                     }
+
+                    // Love Ping button (Sends an instant heart ping in real-time)
+                    Box(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .background(Color(0xFFFF4081).copy(alpha = 0.20f))
+                            .border(1.dp, Color(0xFFFF4081).copy(alpha = 0.6f), CircleShape)
+                            .clickable { onLovePingClick() }
+                            .padding(6.dp)
+                            .testTag("header_love_ping_button"),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "❤️",
+                            fontSize = 13.sp
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(4.dp))
 
                     // Google Messages direct link button
                     Box(

@@ -50,6 +50,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.ContentCopy
 import com.example.data.FriendProfile
 import com.example.ui.theme.GlassTheme
 import com.example.ui.theme.TimeOfDay
@@ -65,6 +68,10 @@ fun FriendProfileSheet(
     onUpdateProfile: (name: String, handle: String, avatar: String, streak: Int, phone: String) -> Unit,
     onTestHapticFeedback: () -> Unit,
     onClearUnsavedMessages: () -> Unit,
+    isRealtimeConnected: Boolean = true,
+    onSwitchRole: (String) -> Unit = {},
+    onUpdateCoupleCode: (String) -> Unit = {},
+    onLovePing: (String) -> Unit = {},
     onSignInGoogleDemo: (email: String, name: String) -> Unit = { _, _ -> },
     onSignOutGoogle: () -> Unit = {},
     onOpenGoogleMessages: (prefillText: String) -> Unit = {},
@@ -74,11 +81,12 @@ fun FriendProfileSheet(
     val palette = GlassTheme.palette
     var showEditDialog by remember { mutableStateOf(false) }
 
-    var editName by remember { mutableStateOf(profile?.name ?: "Alex") }
-    var editHandle by remember { mutableStateOf(profile?.handle ?: "alex.snap") }
-    var editAvatar by remember { mutableStateOf(profile?.avatarEmoji ?: "👻") }
-    var editStreak by remember { mutableStateOf((profile?.streakCount ?: 142).toString()) }
+    var editName by remember { mutableStateOf(profile?.name ?: "My Babe 💖") }
+    var editHandle by remember { mutableStateOf(profile?.handle ?: "my.girlfriend") }
+    var editAvatar by remember { mutableStateOf(profile?.avatarEmoji ?: "👸") }
+    var editStreak by remember { mutableStateOf((profile?.streakCount ?: 365).toString()) }
     var editPhone by remember { mutableStateOf(profile?.phoneNumber ?: "+15551234567") }
+    var editCoupleCode by remember { mutableStateOf(profile?.coupleSyncCode ?: "DAYAN-LOVE-2026") }
 
     val avatarOptions = listOf("👻", "⚡", "👑", "💅", "🔥", "🦄", "👽", "🐱", "🐶", "🥑")
 
@@ -118,6 +126,13 @@ fun FriendProfileSheet(
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
+                    OutlinedTextField(
+                        value = editCoupleCode,
+                        onValueChange = { editCoupleCode = it.uppercase().replace(" ", "-") },
+                        label = { Text("Couple Room Code (Live Sync Topic)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                     Text(
                         text = "Choose Bitmoji / Avatar:",
                         fontSize = 12.sp,
@@ -146,8 +161,11 @@ fun FriendProfileSheet(
             confirmButton = {
                 Button(
                     onClick = {
-                        val streak = editStreak.toIntOrNull() ?: 142
+                        val streak = editStreak.toIntOrNull() ?: 365
                         onUpdateProfile(editName, editHandle, editAvatar, streak, editPhone)
+                        if (editCoupleCode.isNotBlank()) {
+                            onUpdateCoupleCode(editCoupleCode)
+                        }
                         showEditDialog = false
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = palette.snapPrimaryYellow)
@@ -187,15 +205,15 @@ fun FriendProfileSheet(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = Icons.Rounded.Shield,
-                        contentDescription = "Encrypted Friend",
-                        tint = palette.snapPrimaryYellow,
+                        imageVector = Icons.Default.Favorite,
+                        contentDescription = "Couple Space",
+                        tint = Color(0xFFFF4081),
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "SOLO SNAP PROFILE",
-                        color = palette.snapPrimaryYellow,
+                        text = "COUPLE SPACE & REAL-TIME LINK",
+                        color = Color(0xFFFF80AB),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.ExtraBold,
                         letterSpacing = 1.sp
@@ -216,7 +234,7 @@ fun FriendProfileSheet(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Main Friend Avatar Card
+            // Main Girlfriend Avatar Card
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -233,11 +251,11 @@ fun FriendProfileSheet(
                             .size(88.dp)
                             .clip(CircleShape)
                             .background(Color.White.copy(alpha = 0.15f))
-                            .border(2.dp, palette.snapPrimaryYellow, CircleShape),
+                            .border(2.dp, Color(0xFFFF4081), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = profile?.avatarEmoji ?: "👻",
+                            text = profile?.avatarEmoji ?: "👸",
                             fontSize = 46.sp
                         )
                     }
@@ -248,7 +266,7 @@ fun FriendProfileSheet(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = profile?.name ?: "Alex",
+                            text = profile?.name ?: "My Babe 💖",
                             color = palette.textPrimary,
                             fontSize = 22.sp,
                             fontWeight = FontWeight.Bold
@@ -268,7 +286,7 @@ fun FriendProfileSheet(
                     }
 
                     Text(
-                        text = "@${profile?.handle ?: "alex.snap"}",
+                        text = "@${profile?.handle ?: "my.girlfriend"}",
                         color = palette.textSecondary,
                         fontSize = 13.sp
                     )
@@ -279,21 +297,19 @@ fun FriendProfileSheet(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(20.dp))
-                            .background(palette.snapPrimaryYellow.copy(alpha = 0.25f))
-                            .border(1.dp, palette.snapPrimaryYellow, RoundedCornerShape(20.dp))
+                            .background(Color(0xFFFF4081).copy(alpha = 0.25f))
+                            .border(1.dp, Color(0xFFFF4081), RoundedCornerShape(20.dp))
                             .padding(horizontal = 12.dp, vertical = 5.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.LocalFireDepartment,
-                                contentDescription = "Streak",
-                                tint = palette.snapPrimaryYellow,
-                                modifier = Modifier.size(16.dp)
+                            Text(
+                                text = "❤️",
+                                fontSize = 14.sp
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "${profile?.streakCount ?: 142} Days Streak! 💛 Best Friends",
-                                color = palette.snapPrimaryYellow,
+                                text = "${profile?.streakCount ?: 365} Days Streak! Couple Forever 💕",
+                                color = Color(0xFFFF80AB),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -304,10 +320,242 @@ fun FriendProfileSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Real-Time Couple 2-Way Sync Card
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(Color.White.copy(alpha = 0.08f))
+                    .border(1.dp, Color(0xFFFF4081).copy(alpha = 0.4f), RoundedCornerShape(24.dp))
+                    .padding(16.dp)
+                    .testTag("couple_sync_card")
+            ) {
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Sync,
+                                contentDescription = "Real-time Sync",
+                                tint = Color(0xFFFF4081),
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "REAL-TIME COUPLE SYNC",
+                                color = Color(0xFFFF80AB),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 0.8.sp
+                            )
+                        }
+
+                        // Live Status Pill
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (isRealtimeConnected) Color(0xFF00E676).copy(alpha = 0.20f) else Color(0xFFFFB74D).copy(alpha = 0.20f))
+                                .border(1.dp, if (isRealtimeConnected) Color(0xFF00E676) else Color(0xFFFFB74D), RoundedCornerShape(12.dp))
+                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .clip(CircleShape)
+                                        .background(if (isRealtimeConnected) Color(0xFF00E676) else Color(0xFFFFB74D))
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = if (isRealtimeConnected) "Live Stream" else "Connecting",
+                                    color = if (isRealtimeConnected) Color(0xFF69F0AE) else Color(0xFFFFB74D),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "WHO IS USING THIS PHONE:",
+                        color = palette.textSecondary,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    // Role switch buttons
+                    val currentRole = profile?.myRole ?: "BOYFRIEND"
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        val isBoyfriend = currentRole == "BOYFRIEND"
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(if (isBoyfriend) Color(0xFF2979FF).copy(alpha = 0.30f) else Color.White.copy(alpha = 0.06f))
+                                .border(1.dp, if (isBoyfriend) Color(0xFF2979FF) else Color.White.copy(alpha = 0.15f), RoundedCornerShape(16.dp))
+                                .clickable { onSwitchRole("BOYFRIEND") }
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(text = "👦", fontSize = 20.sp)
+                                Text(
+                                    text = "Dayan (Boyfriend)",
+                                    color = if (isBoyfriend) Color(0xFF82B1FF) else palette.textPrimary,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        val isGirlfriend = currentRole == "GIRLFRIEND"
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(if (isGirlfriend) Color(0xFFFF4081).copy(alpha = 0.30f) else Color.White.copy(alpha = 0.06f))
+                                .border(1.dp, if (isGirlfriend) Color(0xFFFF4081) else Color.White.copy(alpha = 0.15f), RoundedCornerShape(16.dp))
+                                .clickable { onSwitchRole("GIRLFRIEND") }
+                                .padding(vertical = 10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(text = "👧", fontSize = 20.sp)
+                                Text(
+                                    text = "Girlfriend (Babe)",
+                                    color = if (isGirlfriend) Color(0xFFFF80AB) else palette.textPrimary,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Shared Room Code Box
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(Color.White.copy(alpha = 0.06f))
+                            .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(14.dp))
+                            .padding(10.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = "Shared Couple Room Code:",
+                                    color = palette.textSecondary,
+                                    fontSize = 10.sp
+                                )
+                                Text(
+                                    text = profile?.coupleSyncCode ?: "DAYAN-LOVE-2026",
+                                    color = Color(0xFFFFD54F),
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Black,
+                                    letterSpacing = 1.sp
+                                )
+                            }
+
+                            IconButton(
+                                onClick = { showEditDialog = true },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "Edit Room Code",
+                                    tint = palette.snapPrimaryYellow,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Instant Love Ping Action Row
+                    Text(
+                        text = "INSTANT LOVE PINGS:",
+                        color = palette.textSecondary,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0xFFFF4081).copy(alpha = 0.20f))
+                                .border(1.dp, Color(0xFFFF4081).copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                                .clickable { onLovePing("HEART") }
+                                .padding(vertical = 8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(text = "❤️ Heart", color = Color(0xFFFF80AB), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0xFFFF4081).copy(alpha = 0.20f))
+                                .border(1.dp, Color(0xFFFF4081).copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                                .clickable { onLovePing("KISS") }
+                                .padding(vertical = 8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(text = "💋 Kiss", color = Color(0xFFFF80AB), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0xFFFF4081).copy(alpha = 0.20f))
+                                .border(1.dp, Color(0xFFFF4081).copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                                .clickable { onLovePing("HUG") }
+                                .padding(vertical = 8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(text = "🫂 Hug", color = Color(0xFFFF80AB), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Text(
+                        text = "💌 Both devices text in sub-second real-time with live typing, ephemeral deletes, and read receipts!",
+                        color = palette.textTertiary,
+                        fontSize = 10.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             // Google Account & Google Messages 1-on-1 SMS Integration
             GoogleIntegrationCard(
                 googleUser = googleUser,
-                friendName = profile?.name ?: "Alex",
+                friendName = profile?.name ?: "My Babe 💖",
                 friendPhone = profile?.phoneNumber ?: "+15551234567",
                 onSignInDemo = onSignInGoogleDemo,
                 onSignOut = onSignOutGoogle,

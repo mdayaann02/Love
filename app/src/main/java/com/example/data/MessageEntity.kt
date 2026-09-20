@@ -16,5 +16,6 @@ data class MessageEntity(
     val ephemeralMode: String = "KEEP", // "KEEP" or "DELETE_AFTER_READ"
     val emojiSticker: String? = null, // e.g. "🤪" if sent as big sticker
     val mediaType: String = "TEXT", // "TEXT", "STICKER", "SNAP"
-    val isBurned: Boolean = false // animated vanishing
+    val isBurned: Boolean = false, // animated vanishing
+    val clientMessageId: String = ""
 )

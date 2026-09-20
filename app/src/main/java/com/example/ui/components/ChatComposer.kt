@@ -51,6 +51,7 @@ fun ChatComposer(
     onToggleEmojiDrawer: () -> Unit,
     onSimulateIncomingMessage: () -> Unit,
     onGoogleMessagesClick: () -> Unit = {},
+    onLovePing: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val palette = GlassTheme.palette
@@ -92,6 +93,33 @@ fun ChatComposer(
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
+                // Quick Real-Time Love Ping (Heart)
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFFFF4081).copy(alpha = 0.20f))
+                        .border(1.dp, Color(0xFFFF4081).copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                        .clickable { onLovePing() }
+                        .padding(horizontal = 7.dp, vertical = 3.dp)
+                        .testTag("composer_love_ping_btn")
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "❤️",
+                            fontSize = 11.sp
+                        )
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text(
+                            text = "Love Ping",
+                            color = Color(0xFFFF80AB),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(6.dp))
+
                 // Quick SMS in Google Messages
                 Box(
                     modifier = Modifier
@@ -121,7 +149,7 @@ fun ChatComposer(
 
                 Spacer(modifier = Modifier.width(6.dp))
 
-                // Quick Friend Incoming Ping (Simulate Received message with Haptic Feedback)
+                // Quick Girlfriend Incoming Ping (Solo test simulator)
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(12.dp))
@@ -140,7 +168,7 @@ fun ChatComposer(
                         )
                         Spacer(modifier = Modifier.width(3.dp))
                         Text(
-                            text = "Friend Snap",
+                            text = "Babe Snap",
                             color = palette.snapPrimaryYellow,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold

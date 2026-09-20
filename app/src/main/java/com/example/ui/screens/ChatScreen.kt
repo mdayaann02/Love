@@ -9,12 +9,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -61,6 +64,8 @@ fun ChatScreen(
     val currentEphemeralMode by viewModel.currentEphemeralMode.collectAsState()
     val manualTimeOfDay by viewModel.manualTimeOfDay.collectAsState()
     val googleUser by viewModel.googleUser.collectAsState()
+    val isRealtimeConnected by viewModel.isRealtimeConnected.collectAsState()
+    val lovePingEvent by viewModel.lovePingEvent.collectAsState()
 
     // Determine current TimeOfDay based on manual override or real clock
     val activeTimeOfDay = remember(manualTimeOfDay, friendProfile?.timeOfDayTheme) {
@@ -117,6 +122,10 @@ fun ChatScreen(
                     isFriendTyping = isFriendTyping,
                     currentTimeOfDay = activeTimeOfDay,
                     ephemeralMode = currentEphemeralMode,
+                    isRealtimeConnected = isRealtimeConnected,
+                    onLovePingClick = {
+                        viewModel.sendLovePing("HEART")
+                    },
                     onProfileClick = {
                         isProfileSheetOpen = true
                         isEmojiDrawerOpen = false
@@ -226,10 +235,14 @@ fun ChatScreen(
                 // Chat Composer
                 ChatComposer(
                     text = inputText,
-                    onTextChanged = { inputText = it },
+                    onTextChanged = {
+                        inputText = it
+                        viewModel.onUserTyping(it.isNotBlank())
+                    },
                     onSendMessage = {
                         if (inputText.isNotBlank()) {
                             viewModel.sendMessage(inputText)
+                            viewModel.onUserTyping(false)
                             inputText = ""
                         }
                     },
@@ -244,6 +257,9 @@ fun ChatScreen(
                         if (isEmojiDrawerOpen) {
                             isProfileSheetOpen = false
                         }
+                    },
+                    onLovePing = {
+                        viewModel.sendLovePing("HEART")
                     },
                     onSimulateIncomingMessage = {
                         viewModel.triggerInstantFriendMessage()
@@ -277,6 +293,38 @@ fun ChatScreen(
                 }
             }
 
+            // Floating Romantic Love Ping Notification Alert
+            AnimatedVisibility(
+                visible = lovePingEvent != null,
+                enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
+                exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut(),
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .statusBarsPadding()
+                    .padding(top = 68.dp)
+            ) {
+                LiquidGlassCard(
+                    shape = RoundedCornerShape(20.dp),
+                    backgroundColor = Color(0xFFFF4081).copy(alpha = 0.95f),
+                    borderColor = Color.White.copy(alpha = 0.8f),
+                    borderWidth = 1.5.dp
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = "💌", fontSize = 16.sp)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = lovePingEvent ?: "",
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
             // Friend Profile & Liquid Settings Sheet Overlay
             AnimatedVisibility(
                 visible = isProfileSheetOpen,
@@ -304,6 +352,24 @@ fun ChatScreen(
                     onClearUnsavedMessages = {
                         viewModel.clearUnsavedMessages()
                         isProfileSheetOpen = false
+                    },
+                    isRealtimeConnected = isRealtimeConnected,
+                    onSwitchRole = { role ->
+                        viewModel.switchUserRole(role)
+                    },
+                    onUpdateCoupleCode = { newCode ->
+                        val prof = friendProfile
+                        viewModel.updateFriendProfile(
+                            prof?.name ?: "My Babe 💖",
+                            prof?.handle ?: "my.girlfriend",
+                            prof?.avatarEmoji ?: "👸",
+                            prof?.streakCount ?: 365,
+                            prof?.phoneNumber ?: "+15551234567",
+                            newCode
+                        )
+                    },
+                    onLovePing = { pingType ->
+                        viewModel.sendLovePing(pingType)
                     },
                     onSignInGoogleDemo = { email, name ->
                         viewModel.signInWithDemoGoogle(email, name)

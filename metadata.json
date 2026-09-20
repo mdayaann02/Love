@@ -1,6 +1,6 @@
 {
   "name": "Snap Messenger",
-  "description": "A Snapchat-themed private liquid glass single-contact messenger with dynamic time-of-day color themes, funny emoji reactions, ephemeral chat controls, and haptic feedback.",
+  "description": "A private liquid glass messenger designed for Dayan and his girlfriend with real-time two-way messaging, live typing, romantic love pings, Google login, Google Messages integration, ephemeral chat, and Snapchat-style liquid themes.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

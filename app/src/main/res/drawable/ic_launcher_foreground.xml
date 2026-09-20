@@ -1,0 +1,33 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group>
+        <!-- Soft drop shadow for the ghost -->
+        <path
+            android:fillColor="#25000000"
+            android:pathData="M 54,26 C 43,26 35,34 35,46 C 35,51 34,54 31,56 C 29,57 28,59 29,61 C 30,63 33,63 36,61 C 36,64 36,68 37,72 C 37,75 39,78 42,78 C 45,78 47,75 49,76 C 51,77 53,80 56,80 C 59,80 61,77 63,76 C 65,75 67,78 70,78 C 73,78 75,75 75,72 C 76,68 76,64 76,61 C 79,63 82,63 83,61 C 84,59 83,57 81,56 C 78,54 77,51 77,46 C 77,34 69,26 54,26 Z" />
+        <!-- Main Ghost Silhouette -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M 54,24 C 43,24 35,32 35,44 C 35,49 34,52 31,54 C 29,55 28,57 29,59 C 30,61 33,61 36,59 C 36,62 36,66 37,70 C 37,73 39,76 42,76 C 45,76 47,73 49,74 C 51,75 53,78 56,78 C 59,78 61,75 63,74 C 65,73 67,76 70,76 C 73,76 75,73 75,70 C 76,66 76,62 76,59 C 79,61 82,61 83,59 C 84,57 83,55 81,54 C 78,52 77,49 77,44 C 77,32 69,24 54,24 Z" />
+        <!-- Ghost Inner Outline border -->
+        <path
+            android:strokeColor="#111111"
+            android:strokeWidth="2.8"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:fillColor="#00000000"
+            android:pathData="M 54,24 C 43,24 35,32 35,44 C 35,49 34,52 31,54 C 29,55 28,57 29,59 C 30,61 33,61 36,59 C 36,62 36,66 37,70 C 37,73 39,76 42,76 C 45,76 47,73 49,74 C 51,75 53,78 56,78 C 59,78 61,75 63,74 C 65,73 67,76 70,76 C 73,76 75,73 75,70 C 76,66 76,62 76,59 C 79,61 82,61 83,59 C 84,57 83,55 81,54 C 78,52 77,49 77,44 C 77,32 69,24 54,24 Z" />
+        <!-- Liquid Glass Sheen Arc -->
+        <path
+            android:pathData="M 40,36 C 44,28 56,26 62,29 C 56,31 46,36 43,45 C 41,43 40,39 40,36 Z"
+            android:fillColor="#33FFFFFF" />
+        <!-- Chat Bubble Accent in Glass Style -->
+        <path
+            android:pathData="M 60,50 A 10,10 0 1 1 60,50.1 Z"
+            android:fillColor="#15000000" />
+    </group>
+</vector>

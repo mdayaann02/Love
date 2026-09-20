@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
@@ -59,6 +60,7 @@ fun ChatHeader(
     onProfileClick: () -> Unit,
     onEphemeralToggleClick: () -> Unit,
     onTimeOfDayToggleClick: () -> Unit,
+    onGoogleMessagesClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val palette = GlassTheme.palette
@@ -268,6 +270,27 @@ fun ChatHeader(
                             )
                         }
                     }
+
+                    // Google Messages direct link button
+                    Box(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .background(Color(0xFF1A73E8).copy(alpha = 0.20f))
+                            .border(1.dp, Color(0xFF1A73E8).copy(alpha = 0.5f), CircleShape)
+                            .clickable { onGoogleMessagesClick() }
+                            .padding(7.dp)
+                            .testTag("header_google_messages_button"),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Chat,
+                            contentDescription = "Text in Google Messages",
+                            tint = Color(0xFF64B5F6),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(4.dp))
 
                     IconButton(
                         onClick = { onProfileClick() },

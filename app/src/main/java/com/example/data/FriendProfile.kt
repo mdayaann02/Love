@@ -17,5 +17,6 @@ data class FriendProfile(
     val timeOfDayTheme: String = "AUTO", // "AUTO", "DAWN", "DAY", "SUNSET", "NIGHT"
     val hapticFeedbackEnabled: Boolean = true,
     val soundEnabled: Boolean = true,
-    val encryptionKeyFingerprint: String = "48A2-9E71-F03B-CC89"
+    val encryptionKeyFingerprint: String = "48A2-9E71-F03B-CC89",
+    val phoneNumber: String = "+15551234567" // Connected phone number for Google Messages 1-on-1 SMS integration
 )

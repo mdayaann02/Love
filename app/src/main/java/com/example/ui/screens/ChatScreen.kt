@@ -60,6 +60,7 @@ fun ChatScreen(
     val isFriendTyping by viewModel.isFriendTyping.collectAsState()
     val currentEphemeralMode by viewModel.currentEphemeralMode.collectAsState()
     val manualTimeOfDay by viewModel.manualTimeOfDay.collectAsState()
+    val googleUser by viewModel.googleUser.collectAsState()
 
     // Determine current TimeOfDay based on manual override or real clock
     val activeTimeOfDay = remember(manualTimeOfDay, friendProfile?.timeOfDayTheme) {
@@ -133,6 +134,9 @@ fun ChatScreen(
                             TimeOfDay.NIGHT -> "DAWN"
                         }
                         viewModel.setTimeOfDayMode(nextTime)
+                    },
+                    onGoogleMessagesClick = {
+                        viewModel.openGoogleMessages()
                     }
                 )
 
@@ -193,22 +197,26 @@ fun ChatScreen(
                                 items = messages,
                                 key = { it.id }
                             ) { message ->
-                                MessageItem(
-                                    message = message,
-                                    onToggleSave = { viewModel.toggleSaveMessage(it) },
-                                    onBurnImmediately = { viewModel.burnMessageImmediately(it) },
-                                    onMarkRead = { viewModel.markMessageRead(it) }
-                                )
+                                Box(modifier = Modifier.animateItem()) {
+                                    MessageItem(
+                                        message = message,
+                                        onToggleSave = { viewModel.toggleSaveMessage(it) },
+                                        onBurnImmediately = { viewModel.burnMessageImmediately(it) },
+                                        onMarkRead = { viewModel.markMessageRead(it) }
+                                    )
+                                }
                             }
 
                             // Real-time animated 'is typing' indicator in the chat stream
                             if (isFriendTyping) {
                                 item(key = "realtime_typing_indicator") {
-                                    RealtimeTypingIndicator(
-                                        isVisible = true,
-                                        friendName = friendProfile?.name ?: "Alex",
-                                        avatarEmoji = friendProfile?.avatarEmoji ?: "👻"
-                                    )
+                                    Box(modifier = Modifier.animateItem()) {
+                                        RealtimeTypingIndicator(
+                                            isVisible = true,
+                                            friendName = friendProfile?.name ?: "Alex",
+                                            avatarEmoji = friendProfile?.avatarEmoji ?: "👻"
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -239,6 +247,9 @@ fun ChatScreen(
                     },
                     onSimulateIncomingMessage = {
                         viewModel.triggerInstantFriendMessage()
+                    },
+                    onGoogleMessagesClick = {
+                        viewModel.openGoogleMessages(inputText)
                     }
                 )
 
@@ -275,6 +286,7 @@ fun ChatScreen(
             ) {
                 FriendProfileSheet(
                     profile = friendProfile,
+                    googleUser = googleUser,
                     currentTimeOfDay = activeTimeOfDay,
                     onTimeOfDaySelected = { mode ->
                         viewModel.setTimeOfDayMode(mode)
@@ -283,8 +295,8 @@ fun ChatScreen(
                     onEphemeralModeSelected = { mode ->
                         viewModel.setEphemeralMode(mode)
                     },
-                    onUpdateProfile = { name, handle, avatar, streak ->
-                        viewModel.updateFriendProfile(name, handle, avatar, streak)
+                    onUpdateProfile = { name, handle, avatar, streak, phone ->
+                        viewModel.updateFriendProfile(name, handle, avatar, streak, phone)
                     },
                     onTestHapticFeedback = {
                         viewModel.hapticManager.vibrateMessageReceived()
@@ -292,6 +304,15 @@ fun ChatScreen(
                     onClearUnsavedMessages = {
                         viewModel.clearUnsavedMessages()
                         isProfileSheetOpen = false
+                    },
+                    onSignInGoogleDemo = { email, name ->
+                        viewModel.signInWithDemoGoogle(email, name)
+                    },
+                    onSignOutGoogle = {
+                        viewModel.signOutGoogle()
+                    },
+                    onOpenGoogleMessages = { prefill ->
+                        viewModel.openGoogleMessages(prefill)
                     },
                     onClose = { isProfileSheetOpen = false }
                 )

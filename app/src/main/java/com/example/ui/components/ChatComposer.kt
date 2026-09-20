@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.LocalFireDepartment
@@ -49,6 +50,7 @@ fun ChatComposer(
     isEmojiDrawerOpen: Boolean,
     onToggleEmojiDrawer: () -> Unit,
     onSimulateIncomingMessage: () -> Unit,
+    onGoogleMessagesClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val palette = GlassTheme.palette
@@ -89,30 +91,61 @@ fun ChatComposer(
                 )
             }
 
-            // Quick Friend Incoming Ping (Simulate Received message with Haptic Feedback)
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(palette.snapPrimaryYellow.copy(alpha = 0.18f))
-                    .border(1.dp, palette.snapPrimaryYellow.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
-                    .clickable { onSimulateIncomingMessage() }
-                    .padding(horizontal = 7.dp, vertical = 3.dp)
-                    .testTag("simulate_friend_ping_btn")
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Bolt,
-                        contentDescription = "Incoming Ping",
-                        tint = palette.snapPrimaryYellow,
-                        modifier = Modifier.size(12.dp)
-                    )
-                    Spacer(modifier = Modifier.width(3.dp))
-                    Text(
-                        text = "Friend Snap",
-                        color = palette.snapPrimaryYellow,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // Quick SMS in Google Messages
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xFF1A73E8).copy(alpha = 0.20f))
+                        .border(1.dp, Color(0xFF1A73E8).copy(alpha = 0.45f), RoundedCornerShape(12.dp))
+                        .clickable { onGoogleMessagesClick() }
+                        .padding(horizontal = 7.dp, vertical = 3.dp)
+                        .testTag("composer_google_messages_btn")
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Chat,
+                            contentDescription = "SMS via Google Messages",
+                            tint = Color(0xFF64B5F6),
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text(
+                            text = "Google Messages",
+                            color = Color(0xFF90CAF9),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(6.dp))
+
+                // Quick Friend Incoming Ping (Simulate Received message with Haptic Feedback)
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(palette.snapPrimaryYellow.copy(alpha = 0.18f))
+                        .border(1.dp, palette.snapPrimaryYellow.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                        .clickable { onSimulateIncomingMessage() }
+                        .padding(horizontal = 7.dp, vertical = 3.dp)
+                        .testTag("simulate_friend_ping_btn")
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Bolt,
+                            contentDescription = "Incoming Ping",
+                            tint = palette.snapPrimaryYellow,
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text(
+                            text = "Friend Snap",
+                            color = palette.snapPrimaryYellow,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }

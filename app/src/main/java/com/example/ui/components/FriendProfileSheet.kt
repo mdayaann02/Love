@@ -57,13 +57,17 @@ import com.example.ui.theme.TimeOfDay
 @Composable
 fun FriendProfileSheet(
     profile: FriendProfile?,
+    googleUser: com.example.data.GoogleUserData = com.example.data.GoogleUserData(),
     currentTimeOfDay: TimeOfDay,
     onTimeOfDaySelected: (String) -> Unit,
     ephemeralMode: String,
     onEphemeralModeSelected: (String) -> Unit,
-    onUpdateProfile: (name: String, handle: String, avatar: String, streak: Int) -> Unit,
+    onUpdateProfile: (name: String, handle: String, avatar: String, streak: Int, phone: String) -> Unit,
     onTestHapticFeedback: () -> Unit,
     onClearUnsavedMessages: () -> Unit,
+    onSignInGoogleDemo: (email: String, name: String) -> Unit = { _, _ -> },
+    onSignOutGoogle: () -> Unit = {},
+    onOpenGoogleMessages: (prefillText: String) -> Unit = {},
     onClose: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -74,6 +78,7 @@ fun FriendProfileSheet(
     var editHandle by remember { mutableStateOf(profile?.handle ?: "alex.snap") }
     var editAvatar by remember { mutableStateOf(profile?.avatarEmoji ?: "👻") }
     var editStreak by remember { mutableStateOf((profile?.streakCount ?: 142).toString()) }
+    var editPhone by remember { mutableStateOf(profile?.phoneNumber ?: "+15551234567") }
 
     val avatarOptions = listOf("👻", "⚡", "👑", "💅", "🔥", "🦄", "👽", "🐱", "🐶", "🥑")
 
@@ -81,7 +86,7 @@ fun FriendProfileSheet(
         AlertDialog(
             onDismissRequest = { showEditDialog = false },
             title = {
-                Text(text = "Edit Friend Profile", fontWeight = FontWeight.Bold)
+                Text(text = "Edit Friend Profile & Phone", fontWeight = FontWeight.Bold)
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -96,6 +101,13 @@ fun FriendProfileSheet(
                         value = editHandle,
                         onValueChange = { editHandle = it },
                         label = { Text("Snap Username") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = editPhone,
+                        onValueChange = { editPhone = it },
+                        label = { Text("Google Messages Phone Number") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -135,7 +147,7 @@ fun FriendProfileSheet(
                 Button(
                     onClick = {
                         val streak = editStreak.toIntOrNull() ?: 142
-                        onUpdateProfile(editName, editHandle, editAvatar, streak)
+                        onUpdateProfile(editName, editHandle, editAvatar, streak, editPhone)
                         showEditDialog = false
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = palette.snapPrimaryYellow)
@@ -289,6 +301,28 @@ fun FriendProfileSheet(
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Google Account & Google Messages 1-on-1 SMS Integration
+            GoogleIntegrationCard(
+                googleUser = googleUser,
+                friendName = profile?.name ?: "Alex",
+                friendPhone = profile?.phoneNumber ?: "+15551234567",
+                onSignInDemo = onSignInGoogleDemo,
+                onSignOut = onSignOutGoogle,
+                onOpenGoogleMessages = onOpenGoogleMessages,
+                onUpdateFriendPhone = { newPhone ->
+                    val streak = profile?.streakCount ?: 142
+                    onUpdateProfile(
+                        profile?.name ?: "Alex",
+                        profile?.handle ?: "alex.snap",
+                        profile?.avatarEmoji ?: "👻",
+                        streak,
+                        newPhone
+                    )
+                }
+            )
 
             Spacer(modifier = Modifier.height(20.dp))
 

@@ -6,8 +6,11 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.AppDatabase
 import com.example.data.ChatRepository
 import com.example.data.FriendProfile
+import com.example.data.GoogleUserData
 import com.example.data.MessageEntity
 import com.example.ui.theme.TimeOfDay
+import com.example.util.GoogleAuthManager
+import com.example.util.GoogleMessagesManager
 import com.example.util.HapticFeedbackManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -21,6 +24,9 @@ import kotlinx.coroutines.launch
 class ChatViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: ChatRepository
     val hapticManager: HapticFeedbackManager = HapticFeedbackManager(application)
+    val googleAuthManager: GoogleAuthManager = GoogleAuthManager(application)
+
+    val googleUser: StateFlow<GoogleUserData> = googleAuthManager.currentUser
 
     init {
         val db = AppDatabase.getDatabase(application)
@@ -314,7 +320,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun updateFriendProfile(name: String, handle: String, avatar: String, streak: Int) {
+    fun updateFriendProfile(name: String, handle: String, avatar: String, streak: Int, phoneNumber: String = "+15551234567") {
         viewModelScope.launch {
             val current = friendProfile.value ?: FriendProfile()
             repository.saveFriendProfile(
@@ -322,9 +328,28 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                     name = name,
                     handle = handle,
                     avatarEmoji = avatar,
-                    streakCount = streak
+                    streakCount = streak,
+                    phoneNumber = phoneNumber
                 )
             )
+            hapticManager.vibrateTick()
+        }
+    }
+
+    fun openGoogleMessages(prefillText: String = "") {
+        val phone = friendProfile.value?.phoneNumber ?: "+15551234567"
+        GoogleMessagesManager.openConversation(getApplication(), phone, prefillText)
+        hapticManager.vibrateTick()
+    }
+
+    fun signInWithDemoGoogle(email: String = "snap.user@gmail.com", displayName: String = "Snap Member") {
+        googleAuthManager.signInWithDemoGoogleAccount(email, displayName)
+        hapticManager.vibrateMessageReceived()
+    }
+
+    fun signOutGoogle() {
+        viewModelScope.launch {
+            googleAuthManager.signOut()
             hapticManager.vibrateTick()
         }
     }
